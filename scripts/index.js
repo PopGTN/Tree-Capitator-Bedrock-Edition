@@ -363,6 +363,8 @@ function hasSameTypeLogNearby(centerBlock, thisLogs, dim) {
  const loc      = centerBlock.location;
  const logType  = centerBlock.typeId;
  const thisSet  = new Set(thisLogs.map(l => `${l.x},${l.y},${l.z}`));
+ // Get allowed leaf types for this log so we can verify it's a live tree
+ const leafTypes = LOG_TO_LEAVES.get(logType);
 
  for (let ox = -GROVE_CHECK_RADIUS; ox <= GROVE_CHECK_RADIUS; ox++) {
   for (let oz = -GROVE_CHECK_RADIUS; oz <= GROVE_CHECK_RADIUS; oz++) {
@@ -374,7 +376,27 @@ function hasSameTypeLogNearby(centerBlock, thisLogs, dim) {
     if (thisSet.has(`${x},${y},${z}`)) continue;
     try {
      const b = dim.getBlock({ x, y, z });
-     if (b && b.typeId === logType) return true;
+     if (!b || b.typeId !== logType) continue;
+
+     // Only count this as a grove tree if it has leaves nearby —
+     // a bare stump (old chopped tree) should not block leaf breaking
+     let hasLeaves = false;
+     if (leafTypes) {
+      outer: for (let lx = -4; lx <= 4; lx++) {
+       for (let ly = -4; ly <= 4; ly++) {
+        for (let lz = -4; lz <= 4; lz++) {
+         try {
+          const lb = dim.getBlock({ x: x+lx, y: y+ly, z: z+lz });
+          if (lb && leafTypes.has(lb.typeId)) { hasLeaves = true; break outer; }
+         } catch {}
+        }
+       }
+      }
+     } else {
+      hasLeaves = true; // unknown log type — assume live tree to be safe
+     }
+
+     if (hasLeaves) return true;
     } catch {}
    }
   }
@@ -564,8 +586,6 @@ export function breakEntireTreeProgressive(centerBlock, player, breakLeaves, nea
 
    if (layerIndex === ys.length - 1) {
     if (shouldBreakLeaves) {
-     const playSound    = getProp(player, PROP.sound,     true);
-     const playParticle = getProp(player, PROP.particles, true);
      for (const loc of leaves)
       breakLeafBlock(player, dim, loc);
     }
