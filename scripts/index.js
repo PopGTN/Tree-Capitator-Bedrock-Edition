@@ -306,45 +306,130 @@ system.runInterval(() => {
 /* ------------------------------------------------ */
 
 // Player-built material only.
-// Excludes all naturally generating blocks (stone, deepslate, gravel,
-// andesite, granite, diorite, tuff, ice, snow) that appear near trees
-// in the wild — those would cause false positives on forest-edge trees.
-// Only includes blocks that REQUIRE a player to place them.
+// Excludes all naturally generating blocks so trees in the wild
+// are never falsely blocked.
 const ARTIFICIAL_GROUND = new Set([
- // Cobblestone variants — natural stone becomes cobble only when mined/placed
+ // Cobblestone — natural stone becomes cobble only when mined/placed
  'minecraft:cobblestone','minecraft:cobbled_deepslate','minecraft:mossy_cobblestone',
  // Planks — all wood types
  'minecraft:oak_planks','minecraft:spruce_planks','minecraft:birch_planks',
  'minecraft:jungle_planks','minecraft:acacia_planks','minecraft:dark_oak_planks',
  'minecraft:mangrove_planks','minecraft:cherry_planks','minecraft:bamboo_planks',
  'minecraft:pale_oak_planks','minecraft:crimson_planks','minecraft:warped_planks',
- // Bricks and stone bricks
+ // Wooden slabs
+ 'minecraft:oak_slab','minecraft:spruce_slab','minecraft:birch_slab',
+ 'minecraft:jungle_slab','minecraft:acacia_slab','minecraft:dark_oak_slab',
+ 'minecraft:mangrove_slab','minecraft:cherry_slab','minecraft:bamboo_slab',
+ 'minecraft:pale_oak_slab','minecraft:crimson_slab','minecraft:warped_slab',
+ 'minecraft:bamboo_mosaic_slab',
+ // Stone slabs
+ 'minecraft:stone_slab','minecraft:cobblestone_slab','minecraft:smooth_stone_slab',
+ 'minecraft:stone_brick_slab','minecraft:mossy_stone_brick_slab',
+ 'minecraft:polished_deepslate_slab','minecraft:cobbled_deepslate_slab',
+ 'minecraft:brick_slab','minecraft:sandstone_slab','minecraft:red_sandstone_slab',
+ 'minecraft:nether_brick_slab','minecraft:quartz_slab','minecraft:purpur_slab',
+ // Wooden stairs
+ 'minecraft:oak_stairs','minecraft:spruce_stairs','minecraft:birch_stairs',
+ 'minecraft:jungle_stairs','minecraft:acacia_stairs','minecraft:dark_oak_stairs',
+ 'minecraft:mangrove_stairs','minecraft:cherry_stairs','minecraft:bamboo_stairs',
+ 'minecraft:pale_oak_stairs','minecraft:crimson_stairs','minecraft:warped_stairs',
+ 'minecraft:bamboo_mosaic_stairs',
+ // Stone stairs
+ 'minecraft:stone_stairs','minecraft:cobblestone_stairs','minecraft:stone_brick_stairs',
+ 'minecraft:mossy_stone_brick_stairs','minecraft:brick_stairs','minecraft:sandstone_stairs',
+ 'minecraft:nether_brick_stairs','minecraft:quartz_stairs','minecraft:purpur_stairs',
+ 'minecraft:polished_deepslate_stairs','minecraft:cobbled_deepslate_stairs',
+ // Bricks
  'minecraft:bricks','minecraft:stone_bricks','minecraft:mossy_stone_bricks',
  'minecraft:cracked_stone_bricks','minecraft:chiseled_stone_bricks',
- 'minecraft:nether_bricks','minecraft:red_nether_bricks',
- 'minecraft:polished_deepslate','minecraft:polished_blackstone',
+ 'minecraft:nether_bricks','minecraft:red_nether_bricks','minecraft:chiseled_nether_bricks',
+ // Polished/smooth variants — only exist when crafted
+ 'minecraft:polished_deepslate','minecraft:polished_blackstone','minecraft:polished_basalt',
  'minecraft:polished_granite','minecraft:polished_diorite','minecraft:polished_andesite',
- // Smooth stone — only exists when smelted
  'minecraft:smooth_stone','minecraft:smooth_sandstone','minecraft:smooth_red_sandstone',
- // Concrete and terracotta — clearly player-placed
- 'minecraft:concrete','minecraft:terracotta','minecraft:glazed_terracotta',
+ 'minecraft:smooth_quartz','minecraft:smooth_basalt',
+ // Quartz and purpur — clearly player-crafted
+ 'minecraft:quartz_block','minecraft:chiseled_quartz_block','minecraft:quartz_pillar',
+ 'minecraft:purpur_block','minecraft:purpur_pillar',
+ // Concrete and concrete powder
+ 'minecraft:concrete','minecraft:concrete_powder',
+ // Terracotta — plain and glazed
+ 'minecraft:terracotta','minecraft:glazed_terracotta',
+ 'minecraft:white_terracotta','minecraft:orange_terracotta','minecraft:magenta_terracotta',
+ 'minecraft:light_blue_terracotta','minecraft:yellow_terracotta','minecraft:lime_terracotta',
+ 'minecraft:pink_terracotta','minecraft:gray_terracotta','minecraft:light_gray_terracotta',
+ 'minecraft:cyan_terracotta','minecraft:purple_terracotta','minecraft:blue_terracotta',
+ 'minecraft:brown_terracotta','minecraft:green_terracotta','minecraft:red_terracotta',
+ 'minecraft:black_terracotta',
  // Glass
- 'minecraft:glass','minecraft:glass_pane','minecraft:stained_glass','minecraft:stained_glass_pane',
- // Cut/chiseled stone
+ 'minecraft:glass','minecraft:glass_pane',
+ 'minecraft:white_stained_glass','minecraft:orange_stained_glass','minecraft:magenta_stained_glass',
+ 'minecraft:light_blue_stained_glass','minecraft:yellow_stained_glass','minecraft:lime_stained_glass',
+ 'minecraft:pink_stained_glass','minecraft:gray_stained_glass','minecraft:light_gray_stained_glass',
+ 'minecraft:cyan_stained_glass','minecraft:purple_stained_glass','minecraft:blue_stained_glass',
+ 'minecraft:brown_stained_glass','minecraft:green_stained_glass','minecraft:red_stained_glass',
+ 'minecraft:black_stained_glass',
+ 'minecraft:white_stained_glass_pane','minecraft:orange_stained_glass_pane',
+ // Fences and fence gates
+ 'minecraft:oak_fence','minecraft:spruce_fence','minecraft:birch_fence',
+ 'minecraft:jungle_fence','minecraft:acacia_fence','minecraft:dark_oak_fence',
+ 'minecraft:mangrove_fence','minecraft:cherry_fence','minecraft:pale_oak_fence',
+ 'minecraft:crimson_fence','minecraft:warped_fence',
+ 'minecraft:oak_fence_gate','minecraft:spruce_fence_gate','minecraft:birch_fence_gate',
+ 'minecraft:jungle_fence_gate','minecraft:acacia_fence_gate','minecraft:dark_oak_fence_gate',
+ 'minecraft:mangrove_fence_gate','minecraft:cherry_fence_gate','minecraft:pale_oak_fence_gate',
+ 'minecraft:crimson_fence_gate','minecraft:warped_fence_gate',
+ // Walls
+ 'minecraft:cobblestone_wall','minecraft:mossy_cobblestone_wall','minecraft:stone_brick_wall',
+ 'minecraft:mossy_stone_brick_wall','minecraft:brick_wall','minecraft:nether_brick_wall',
+ 'minecraft:deepslate_brick_wall','minecraft:cobbled_deepslate_wall','minecraft:polished_deepslate_wall',
+ // Doors and trapdoors — player-placed only
+ 'minecraft:oak_door','minecraft:spruce_door','minecraft:birch_door',
+ 'minecraft:jungle_door','minecraft:acacia_door','minecraft:dark_oak_door',
+ 'minecraft:mangrove_door','minecraft:cherry_door','minecraft:pale_oak_door',
+ 'minecraft:crimson_door','minecraft:warped_door','minecraft:iron_door',
+ 'minecraft:oak_trapdoor','minecraft:spruce_trapdoor','minecraft:birch_trapdoor',
+ 'minecraft:jungle_trapdoor','minecraft:acacia_trapdoor','minecraft:dark_oak_trapdoor',
+ 'minecraft:mangrove_trapdoor','minecraft:cherry_trapdoor','minecraft:pale_oak_trapdoor',
+ 'minecraft:crimson_trapdoor','minecraft:warped_trapdoor','minecraft:iron_trapdoor',
+ // Cut stone variants
  'minecraft:cut_sandstone','minecraft:chiseled_sandstone',
+ 'minecraft:cut_red_sandstone','minecraft:chiseled_red_sandstone',
  'minecraft:chiseled_deepslate','minecraft:chiseled_polished_blackstone',
+ // Wool — dyed = player placed
+ 'minecraft:white_wool','minecraft:orange_wool','minecraft:magenta_wool',
+ 'minecraft:light_blue_wool','minecraft:yellow_wool','minecraft:lime_wool',
+ 'minecraft:pink_wool','minecraft:gray_wool','minecraft:light_gray_wool',
+ 'minecraft:cyan_wool','minecraft:purple_wool','minecraft:blue_wool',
+ 'minecraft:brown_wool','minecraft:green_wool','minecraft:red_wool','minecraft:black_wool',
+ // Carpet
+ 'minecraft:white_carpet','minecraft:orange_carpet','minecraft:magenta_carpet',
+ 'minecraft:light_blue_carpet','minecraft:yellow_carpet','minecraft:lime_carpet',
+ 'minecraft:pink_carpet','minecraft:gray_carpet','minecraft:light_gray_carpet',
+ 'minecraft:cyan_carpet','minecraft:purple_carpet','minecraft:blue_carpet',
+ 'minecraft:brown_carpet','minecraft:green_carpet','minecraft:red_carpet','minecraft:black_carpet',
+ // Functional blocks
+ 'minecraft:crafting_table','minecraft:furnace','minecraft:chest','minecraft:trapped_chest',
+ 'minecraft:ender_chest','minecraft:barrel','minecraft:bookshelf',
+ 'minecraft:enchanting_table','minecraft:anvil','minecraft:grindstone',
+ 'minecraft:smithing_table','minecraft:stonecutter','minecraft:loom','minecraft:cartography_table',
+ 'minecraft:fletching_table','minecraft:blast_furnace','minecraft:smoker',
+ 'minecraft:iron_bars','minecraft:iron_block','minecraft:gold_block',
+ 'minecraft:diamond_block','minecraft:emerald_block','minecraft:netherite_block',
 ]);
 
-// Check radius — tight enough to catch adjacent build blocks
-// but not so wide it catches a cobblestone path 5 blocks away
-const BUILD_MAT_RADIUS = 3;
+// Horizontal radius — catches adjacent build blocks
+// Vertical: check more below (floor slabs) than above
+const BUILD_HORIZ_RADIUS = 3;
+const BUILD_DOWN_RADIUS  = 4; // floors sit below support beams
+const BUILD_UP_RADIUS    = 2; // ceilings are less common above logs
 
 function hasBuildLog(block, dim) {
  const loc = block.location;
 
- for (let ox = -BUILD_MAT_RADIUS; ox <= BUILD_MAT_RADIUS; ox++) {
-  for (let oy = -BUILD_MAT_RADIUS; oy <= BUILD_MAT_RADIUS; oy++) {
-   for (let oz = -BUILD_MAT_RADIUS; oz <= BUILD_MAT_RADIUS; oz++) {
+ for (let ox = -BUILD_HORIZ_RADIUS; ox <= BUILD_HORIZ_RADIUS; ox++) {
+  for (let oz = -BUILD_HORIZ_RADIUS; oz <= BUILD_HORIZ_RADIUS; oz++) {
+   for (let oy = -BUILD_DOWN_RADIUS; oy <= BUILD_UP_RADIUS; oy++) {
     try {
      const b = dim.getBlock({ x: loc.x+ox, y: loc.y+oy, z: loc.z+oz });
      if (b && ARTIFICIAL_GROUND.has(b.typeId)) return true;
